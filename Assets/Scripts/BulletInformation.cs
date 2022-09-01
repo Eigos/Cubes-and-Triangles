@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 public class BulletInformation : MonoBehaviour
 {
-    
+
     private int mBulletIndex = -1;
 
     private Collider2D mCollider = null;
@@ -26,7 +26,7 @@ public class BulletInformation : MonoBehaviour
 
     void Start()
     {
-        
+
     }
 
     public BulletInformation Init(BulletTypeScript bulletType)
@@ -56,6 +56,8 @@ public class BulletInformation : MonoBehaviour
     {
         if (bulletIndex == -1)
         {
+            RemoveCollider();
+
             return this;
         }
 
@@ -63,9 +65,9 @@ public class BulletInformation : MonoBehaviour
 
         switch (bulletIndex)
         {
-            
-                //Circle
-            case 0:
+
+            //Circle
+            case (int)BulletIndex.Circle:
                 {
                     CircleCollider2D collider = gameObject.AddComponent<CircleCollider2D>();
 
@@ -81,9 +83,9 @@ public class BulletInformation : MonoBehaviour
 
                     break;
                 }
-            
-                //Square
-            case 1:
+
+            //Square
+            case (int)BulletIndex.Box:
                 {
                     BoxCollider2D collider = gameObject.AddComponent<BoxCollider2D>();
 
@@ -99,9 +101,9 @@ public class BulletInformation : MonoBehaviour
 
                     break;
                 }
-            
-                //Triangle
-            case 2:
+
+            //Triangle
+            case (int)BulletIndex.Triangle:
                 {
                     PolygonCollider2D collider = gameObject.AddComponent<PolygonCollider2D>();
 
@@ -114,7 +116,7 @@ public class BulletInformation : MonoBehaviour
                     float h = GetComponent<RectTransform>().rect.height;
 
                     //p0 : bottom left --- p1 : top middle --- p2 : bottom right
-                    collider.points = new Vector2[] { new Vector2(-1 * (w/2), -1 * (h / 2)),  new Vector2(0, h/2), new Vector2(w / 2, -1 * (h / 2)) };
+                    collider.points = new Vector2[] { new Vector2(-1 * (w / 2), -1 * (h / 2)), new Vector2(0, h / 2), new Vector2(w / 2, -1 * (h / 2)) };
 
                     collider.isTrigger = true;
 
@@ -134,8 +136,28 @@ public class BulletInformation : MonoBehaviour
             return;
         }
 
-        Destroy(mCollider);
+        switch (mColliderIndex)
+        {
+            case (int)BulletIndex.Circle:
+                {
+                    Destroy(GetComponent<CircleCollider2D>());
+                    break;
+                }
 
+            case (int)BulletIndex.Box:
+                {
+                    Destroy(GetComponent<BoxCollider2D>());
+                    break;
+                }
+
+            case (int)BulletIndex.Triangle:
+                {
+                    Destroy(GetComponent<PolygonCollider2D>());
+                    break;
+                }
+        }
+
+        mColliderIndex = -1;
         mCollider = null;
     }
 

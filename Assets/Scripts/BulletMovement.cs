@@ -1,59 +1,58 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using DG.Tweening;
 
 public class BulletMovement : MonoBehaviour
 {
-    float mBulletSpeed;
+    [Range(0.0f, 10.0f)] [SerializeField] float mDefaultBulletSpeed = 1.0f;
 
-    float mBulletIncrement;
+    [Range(0, 2.0f)] [SerializeField] private float m_MovementSmoothing = .05f;  // How much to smooth out the movement
+    [Range(0.0f, 10.0f)] [SerializeField] float mBulletSpeed = 1.0f;
 
-    [SerializeField] private float mDefBulletSpeed;
+    private Rigidbody2D m_Rigidbody2D;
+    private Vector3 m_Velocity = Vector3.zero;
+    private Vector2 mDirection;
 
-    [SerializeField] private float mDefBulletIncrement;
 
-    // Start is called before the first frame update
     void Start()
     {
+        m_Rigidbody2D = GetComponent<Rigidbody2D>();
+    }
+
+    public void Move(Vector2 move)
+    {
+        // Move the character by finding the target velocity
+        Vector3 targetVelocity = new Vector2(move.x * mBulletSpeed, move.y * mBulletSpeed);
+
+        // And then smoothing it out and applying it to the character
+        m_Rigidbody2D.velocity = Vector3.SmoothDamp(m_Rigidbody2D.velocity, targetVelocity, ref m_Velocity, m_MovementSmoothing);
 
     }
 
 
     public void Init()
     {
+        mDirection = new Vector2(Mathf.Cos(transform.rotation.eulerAngles.z * Mathf.Deg2Rad), Mathf.Sin(transform.rotation.eulerAngles.z * Mathf.Deg2Rad));
 
-        GetComponent<Rigidbody2D>().velocity =
-            new Vector2(0 * Mathf.Sign(Mathf.Cos(transform.rotation.eulerAngles.z * Mathf.Deg2Rad)),
-            mBulletSpeed * Mathf.Sign(Mathf.Sin(transform.rotation.eulerAngles.z * Mathf.Deg2Rad)));
+    }
+
+    public void setAsDefault()
+    {
+        mBulletSpeed = mDefaultBulletSpeed;
     }
 
     public void setBulletSpeed(float newVal)
     {
         mBulletSpeed = newVal;
-    }
-
-    public void setBulletIncrement(float newVal)
-    {
-        mBulletIncrement = newVal;
-    }
-
-    public void setAsDefault()
-    {
-
-        mBulletSpeed = mDefBulletSpeed;
-
-        mBulletIncrement = mDefBulletIncrement;
+        
     }
 
     // Update is called once per frame
     void Update()
     {
-        //Move to same direction
-        GetComponent<Rigidbody2D>().velocity += new Vector2(0 * Mathf.Sign(Mathf.Cos(transform.rotation.eulerAngles.z * Mathf.Deg2Rad)) * Time.deltaTime,
-            mBulletIncrement * Mathf.Sign(Mathf.Sin(transform.rotation.eulerAngles.z * Mathf.Deg2Rad)) * Time.deltaTime);
-        
-        // new Vector2(0 * Mathf.Sign(Mathf.Cos(transform.rotation.eulerAngles.z * Mathf.Deg2Rad)) * Time.deltaTime,
-        // mBulletIncrement * Mathf.Sign(Mathf.Sin(transform.rotation.eulerAngles.z * Mathf.Deg2Rad)) * Time.deltaTime);
+
+        Move(mDirection * mBulletSpeed);
     }
 
 
