@@ -40,17 +40,11 @@ public class GameManager : MonoBehaviour
 
     [SerializeField] GameObject mPlayerHPVisualObj;
 
-    [SerializeField] GameObject[] mTipsObj;
-
     private Canvas mCanvasGame;
 
     [SerializeField] float mBulletSpawnRate = 6.0f;
 
     [SerializeField] Text mScoreText;
-
-    [SerializeField] GameObject mBulletsParent;
-
-    [SerializeField] GameObject mParticlesParent;
 
     private float mPlayerHP = 100.0f;
 
@@ -73,6 +67,18 @@ public class GameManager : MonoBehaviour
     // Start is called before the first frame update
     void Awake()
     {
+        mWorldBoundLeft.GetComponent<BoxCollider2D>().size =
+            new Vector2(mWorldBoundLeft.GetComponent<RectTransform>().rect.width, mWorldBoundLeft.GetComponent<RectTransform>().rect.height);
+
+        mWorldBoundRight.GetComponent<BoxCollider2D>().size =
+            new Vector2(mWorldBoundRight.GetComponent<RectTransform>().rect.width, mWorldBoundRight.GetComponent<RectTransform>().rect.height);
+
+        mWorldBoundBottom.GetComponent<BoxCollider2D>().size =
+            new Vector2(mWorldBoundBottom.GetComponent<RectTransform>().rect.width, mWorldBoundBottom.GetComponent<RectTransform>().rect.height);
+
+        mWorldBoundTop.GetComponent<BoxCollider2D>().size =
+            new Vector2(mWorldBoundTop.GetComponent<RectTransform>().rect.width, mWorldBoundTop.GetComponent<RectTransform>().rect.height);
+
         mWorldBoundTop.GetComponent<CollisionCallback>().CollisionFunction = TopBoundCollision;
 
         mWorldBoundBottom.GetComponent<CollisionCallback>().CollisionFunction = BottomBoundCollision;
@@ -94,31 +100,6 @@ public class GameManager : MonoBehaviour
         mObjectPoolObj = new GameObject("ObjectPool");
 
         mParticlePoolObj = new GameObject("ParticlePool");
-
-        float fadeTime = 5.0f;
-
-        foreach (GameObject obj in mTipsObj)
-        {
-            Image image = obj.GetComponent<Image>();
-
-            if (image)
-            {
-                image.CrossFadeAlpha(0, fadeTime, true);
-
-                continue;
-            }
-
-            Text text = obj.GetComponent<Text>();
-
-            if (text)
-            {
-                text.CrossFadeAlpha(0, fadeTime, true);
-
-                continue;
-            }
-        }
-
-        StartCoroutine(DeactiveAfterSeconds(mTipsObj[0], fadeTime));
 
     }
 
@@ -180,7 +161,7 @@ public class GameManager : MonoBehaviour
     {
         ParticleSystem particleSystem = particleObject.GetComponent<ParticleSystem>();
 
-        particleObject.transform.SetParent(mParticlesParent.transform);
+        particleObject.transform.SetParent(mCanvasGame.transform);
         particleObject.transform.localScale = Vector3.one;
         particleObject.transform.position = destObj.transform.position;
         particleObject.transform.SetAsLastSibling();
@@ -236,11 +217,6 @@ public class GameManager : MonoBehaviour
 
     }
 
-    IEnumerator DeactiveAfterSeconds(GameObject obj, float sec){
-        yield return new WaitForSeconds(sec);
-        obj.SetActive(false);
-    }
-
     void UpdatePlayerHPVisual()
     {
         const float maxAlphaValue = 80.0f;
@@ -272,8 +248,6 @@ public class GameManager : MonoBehaviour
 
         mPlayerHP -= 16.5f;
 
-        Mathf.Clamp(mPlayerHP, 0, 100);
-
         UpdatePlayerHPVisual();
 
         if (!collisionObj.gameObject.activeSelf)
@@ -289,7 +263,7 @@ public class GameManager : MonoBehaviour
 
         if (bulletType == -1)
         {
-            bulletType = Random.Range(0, mBulletTypeList.Count);
+            bulletType = Random.Range(1, mBulletTypeList.Count);
         }
 
         GameObject newBullet;
@@ -316,26 +290,11 @@ public class GameManager : MonoBehaviour
 
         newBullet.GetComponent<BulletMovement>().Init();
 
-        newBullet.transform.SetParent(mBulletsParent.transform);
+        newBullet.transform.SetParent(mCanvasGame.transform);
 
         newBullet.transform.SetAsLastSibling();
 
         newBullet.transform.localScale = new Vector3(1, 1, 1);
-
-        //Init particle (trail) - Removed
-        /* 
-        ParticleSystem particleSystem = newBullet.GetComponent<ParticleSystem>();
-        GradientColorKey colorKey = new GradientColorKey();
-        colorKey.color = newBullet.GetComponent<BulletInformation>().getColor();
-        ParticleSystem.MinMaxGradient gradient = new ParticleSystem.MinMaxGradient(colorKey.color);
-
-        var main = newBullet.GetComponent<ParticleSystem>().main;
-        main.startColor = gradient;
-
-        
-        newBullet.GetComponent<ParticleSystemRenderer>().material = mParticleHitMaterials[newBullet.GetComponent<BulletInformation>().GetBulletIndex() - 1];
-        */
-
 
         return newBullet;
     }
@@ -359,7 +318,7 @@ public class GameManager : MonoBehaviour
     void SpawnBullet()
     {
 
-        GameObject newBullet = Shoot(-90, (int)Random.Range(0.0f, (float)mShapeDifficulty), GetFromPool());
+        GameObject newBullet = Shoot(180, (int)Random.Range(0.0f, (float)mShapeDifficulty), GetFromPool());
 
         Vector3 bulletPos = new Vector3(
             Random.Range(newBullet.GetComponent<Image>().sprite.rect.width / 2,
@@ -369,13 +328,9 @@ public class GameManager : MonoBehaviour
 
         newBullet.transform.localPosition = bulletPos;
 
-        newBullet.GetComponent<BulletMovement>().setAsDefault();
-
-        newBullet.GetComponent<BulletMovement>().Init();
-
-        newBullet.transform.eulerAngles = new Vector3(0, 0, -180);
-
         newBullet.GetComponent<BulletInformation>().InitOwner(gameObject);
+
+        newBullet.GetComponent<BulletInformation>().InitCollider(0);
 
         newBullet.GetComponent<CollisionCallback>().CollisionFunction = BulletCollision;
 
@@ -444,33 +399,28 @@ public class GameManager : MonoBehaviour
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
-    public float Remap(float value, float from1, float to1, float from2, float to2)
-    {
-        return (value - from1) / (to1 - from1) * (to2 - from2) + from2;
-    }
-
     private float EaseInOutQuad(float x)
     {
-        return x > 0.5 ? -2 * x * x + 1 : - (1 - Mathf.Pow(-2 * x + 2, 2) / 2) + 1;
-
-    }
-
-    private float EaseInSine(float x){
-        return 1 - Mathf.Cos((x* Mathf.PI) / 2);
+        return x < 0.5 ? 2 * x * x : 1 - Mathf.Pow(-2 * x + 2, 2) / 2;
     }
 
     private void UpdateGameDifficultySpeed()
     {
         float timeMin = 0.0f;
-        float timeMax = 60.0f * 10;
+        float timeMax = 20.0f * 60;
 
         //new block per given second
-        float difficultyMin = 1.8f;  // lowest difficulty   
+        float difficultyMin = 1.8f;  // lowest difficulty  
         float difficultyMax = 0.36f; // highest difficlty 
+
+        //The player will reach the final difficulty speed after 20 minutes the game starts
+
+        //x = time / maxTime
+        //diff = f(x) * 0.36 * 10
 
 
         float fx = EaseInOutQuad(Mathf.Clamp(Time.realtimeSinceStartup / timeMax, timeMin , timeMax));
-        float newDifficulty = Mathf.Clamp(Remap(fx, 1, 0, difficultyMin, difficultyMax), difficultyMax, difficultyMin);
+        float newDifficulty = fx * difficultyMax * 10f;
 
         mBulletSpawnRate = newDifficulty;
     }
@@ -496,7 +446,6 @@ public class GameManager : MonoBehaviour
 
             UpdatePlayerHPVisual();
         }
-
         else if (mPlayerHP < 0)
         {
             EndGame();
@@ -506,12 +455,4 @@ public class GameManager : MonoBehaviour
             DisplayScoreboard();
         }
     }
-}
-
-enum BulletIndex
-{
-    NoIndex = -1,
-    Circle = 0,
-    Box,
-    Triangle
 }
